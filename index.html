@@ -1,103 +1,304 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
-<meta charset="UTF-8">
-<title>Nini Sleep Tracker</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nini Sleep Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* --- CSS: Làm đẹp giao diện (Sáng tạo thêm một chút cho mượt) --- */
+        body {
+            font-family: 'Inter', sans-serif; /* Font chữ hiện đại */
+            background-color: #f7fafc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
 
-<style>
-body{
-font-family: Arial;
-background:#f5f5ff;
-text-align:center;
-padding:20px;
-}
+        .tracker-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            width: 90%;
+            max-width: 800px;
+            display: grid;
+            grid-template-columns: 1fr; /* Mặc định 1 cột cho mobile */
+            gap: 20px;
+        }
 
-.card{
-background:white;
-padding:20px;
-border-radius:15px;
-max-width:400px;
-margin:auto;
-box-shadow:0 5px 20px rgba(0,0,0,0.1);
-}
+        /* Khi màn hình lớn, chia làm 2 cột: Cột nhập/Biểu đồ | Cột Sức khỏe */
+        @media (min-width: 600px) {
+            .tracker-container { grid-template-columns: 1.5fr 1fr; }
+        }
 
-input{
-width:90%;
-padding:10px;
-margin:5px;
-}
+        .header { text-align: center; margin-bottom: 20px; font-weight: bold; font-size: 1.2rem; }
+        
+        .input-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-size: 0.9rem; color: #555; }
+        input[type="date"], input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box; /* Giữ padding không làm phình input */
+        }
 
-button{
-padding:10px;
-width:95%;
-background:black;
-color:white;
-border:none;
-border-radius:10px;
-margin-top:10px;
-}
+        .btn-add {
+            width: 100%;
+            padding: 12px;
+            background-color: black;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        .btn-add:hover { background-color: #333; }
 
-canvas{
-margin-top:20px;
-}
-</style>
+        /* Vùng Biểu đồ */
+        .chart-container { margin-top: 20px; position: relative; height: 250px; }
+
+        /* --- Ô BIỂU HIỆN SỨC KHỎE (Mới thêm) --- */
+        .health-summary-panel {
+            background-color: #fafafa;
+            border: 1px solid #eee;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .health-title { font-size: 1.1rem; font-weight: bold; margin-bottom: 15px; }
+        
+        #health-status-box {
+            width: 100%;
+            height: 120px;
+            border-radius: 12px;
+            border: 2px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 1.5rem;
+            color: #444;
+            transition: all 0.3s ease;
+        }
+
+        .health-desc { font-size: 0.9rem; color: #777; margin-top: 10px; }
+        #health-message { font-style: italic; }
+
+        /* Định nghĩa màu sắc sức khỏe */
+        .status-empty { background-color: #f0f0f0; border-color: #ddd; color: #888; }
+        .status-red { background-color: #fee2e2; border-color: #ef4444; color: #b91c1c; } /* Dưới 6 tiếng */
+        .status-yellow { background-color: #fef3c7; border-color: #f59e0b; color: #92400e; } /* 6-8 tiếng */
+        .status-green { background-color: #d1fae5; border-color: #10b981; color: #065f46; } /* Trên 8 tiếng */
+        
+        .btn-clear {
+            margin-top: 20px;
+            width: 100%;
+            padding: 8px;
+            background-color: transparent;
+            color: #888;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .btn-clear:hover { background-color: #fee2e2; color: #ef4444; border-color: #ef4444; }
+
+    </style>
 </head>
-
 <body>
 
-<div class="card">
+<div class="tracker-container">
+    <div class="tracker-main">
+        <div class="header">🐻 Nini Sleep Tracker</div>
+        
+        <div class="input-group">
+            <label for="date-input">Ngày</label>
+            <input type="date" id="date-input" required>
+        </div>
+        
+        <div class="input-group">
+            <label for="hours-input">Số giờ ngủ (ví dụ: 7.5)</label>
+            <input type="number" id="hours-input" placeholder="0.0" step="0.5" min="0" max="24" required>
+        </div>
+        
+        <button class="btn-add" id="btn-add" onclick="addSleepData()">+ Add Sleep</button>
 
-<h2>🐱 Nini Sleep Tracker</h2>
+        <div class="chart-container">
+            <canvas id="sleepChart"></canvas>
+        </div>
+    </div>
 
-<input id="date" placeholder="Date (06/23)">
-<input id="hours" placeholder="Sleep Hours (8.0)">
-
-<button onclick="addData()">➕ Add Sleep</button>
-
-<canvas id="chart"></canvas>
-
+    <div class="health-summary-panel">
+        <div class="health-title">Trạng thái sức khỏe hôm nay</div>
+        
+        <div id="health-status-box" class="status-empty">
+            <div id="status-text">-- h</div>
+        </div>
+        
+        <div class="health-desc">
+            Vừa nhập: <span id="health-message">Vui lòng nhập dữ liệu giấc ngủ</span>
+        </div>
+        
+        <button class="btn-clear" onclick="clearData()">Xóa hết dữ liệu cũ</button>
+    </div>
 </div>
 
 <script>
+    /* --- JAVASCRIPT: Xử lý logic và vẽ biểu đồ --- */
 
-let data = {
-labels: [],
-values: []
-};
+    // 1. Tự động set ngày hôm nay làm ngày mặc định
+    document.getElementById('date-input').valueAsDate = new Date();
 
-function renderChart(){
-const ctx = document.getElementById('chart');
+    // 2. Khởi tạo Biểu đồ (Sử dụng Chart.js)
+    const ctx = document.getElementById('sleepChart').getContext('2d');
+    let sleepChart;
 
-new Chart(ctx, {
-type:'line',
-data:{
-labels:data.labels,
-datasets:[{
-label:'Sleep Hours',
-data:data.values,
-borderColor:'black',
-fill:false,
-tension:0.3
-}]
-},
-options:{
-responsive:true
-}
-});
-}
+    function initChart(dataLabels = [], dataHours = []) {
+        sleepChart = new Chart(ctx, {
+            type: 'bar', // Loại biểu đồ cột
+            data: {
+                labels: dataLabels, // Ngày
+                datasets: [{
+                    label: 'Số giờ ngủ',
+                    data: dataHours, // Giờ
+                    backgroundColor: 'black', // Giữ màu cột đen giống giao diện cũ của bạn
+                    borderRadius: 6, // Bo góc cột cho mượt
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false, // Để biểu đồ tự lấp đầy container
+                plugins: { legend: { display: false } }, // Ẩn chú thích
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 12, // Đặt max 12 tiếng để dễ nhìn
+                        title: { display: true, text: 'Giờ' },
+                        grid: { display: true, color: '#f0f0f0' }
+                    },
+                    x: {
+                        title: { display: true, text: 'Ngày' },
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
 
-function addData(){
-let d = document.getElementById('date').value;
-let h = document.getElementById('hours').value;
+    // 3. Hàm lấy dữ liệu từ LocalStorage (để app không bị mất dữ liệu khi load lại)
+    function getStoredData() {
+        const stored = localStorage.getItem('niniSleepData');
+        return stored ? JSON.parse(stored) : [];
+    }
 
-data.labels.push(d);
-data.values.push(parseFloat(h));
+    // 4. Hàm cập nhật giao diện (Biểu đồ + Ô Sức khỏe)
+    function updateUI(sleepData) {
+        // Sắp xếp dữ liệu theo ngày tăng dần
+        sleepData.sort((a, b) => new Date(a.date) - new Date(b.date));
+        
+        // Chỉ lấy tối đa 7 ngày gần nhất để biểu đồ không bị rối
+        const displayData = sleepData.slice(-7);
+        const labels = displayData.map(item => item.date.split('-').slice(1).join('/')); // Chuyển 2023-10-27 thành 10/27
+        const hours = displayData.map(item => item.hours);
 
-renderChart();
-}
+        // Cập nhật biểu đồ
+        sleepChart.data.labels = labels;
+        sleepChart.data.datasets[0].data = hours;
+        sleepChart.update('none'); // Update mà không cần render lại toàn bộ để mượt hơn
 
-renderChart();
+        // --- Logic ô Sức khỏe (Yêu cầu của bạn) ---
+        const healthBox = document.getElementById('health-status-box');
+        const statusText = document.getElementById('status-text');
+        const healthMsg = document.getElementById('health-message');
+
+        if (displayData.length === 0) {
+            updateHealthStatus('empty', '-- h', 'Vui lòng nhập dữ liệu giấc ngủ');
+        } else {
+            // Lấy dữ liệu của ngày mới nhất vừa nhập
+            const latest = displayData[displayData.length - 1];
+            const latestHours = latest.hours;
+            
+            if (latestHours >= 😎 {
+                updateHealthStatus('green', latestHours + 'h', 'Thật tuyệt vời! Bạn đã ngủ đủ giấc.');
+            } else if (latestHours >= 6) {
+                updateHealthStatus('yellow', latestHours + 'h', 'Cũng tạm ổn, nhưng nên ngủ nhiều hơn.');
+            } else {
+                updateHealthStatus('red', latestHours + 'h', 'Nguy hiểm! Cần ngủ đủ để đảm bảo sức khỏe.');
+            }
+        }
+    }
+
+    // Hàm phụ để đổi màu ô sức khỏe cho mượt
+    function updateHealthStatus(status, text, msg) {
+        const healthBox = document.getElementById('health-status-box');
+        const statusText = document.getElementById('status-text');
+        const healthMsg = document.getElementById('health-message');
+        
+        // Xóa hết class cũ
+        healthBox.className = '';
+        
+        // Thêm class màu tương ứng
+        healthBox.classList.add('status-' + status);
+        statusText.innerText = text;
+        healthMsg.innerText = msg;
+    }
+
+    // 5. Hàm chính: Xử lý khi bấm nút "+ Add Sleep"
+    function addSleepData() {
+        const dateInput = document.getElementById('date-input').value;
+        const hoursInput = parseFloat(document.getElementById('hours-input').value);
+
+        // Kiểm tra dữ liệu hợp lệ
+        if (!dateInput || isNaN(hoursInput) || hoursInput <= 0 || hoursInput > 24) {
+            alert("🐻 Nini à, vui lòng nhập ngày và số giờ ngủ hợp lệ (từ 0.5 đến 24) nhé!");
+            return;
+        }
+
+        let sleepData = getStoredData();
+
+        // Kiểm tra nếu ngày đã có dữ liệu, hỏi xem có muốn đè lên không
+        const existingIndex = sleepData.findIndex(item => item.date === dateInput);
+        if (existingIndex !== -1) {
+            if(!confirm("Ngày này bạn đã có dữ liệu. Nini muốn cập nhật lại số giờ ngủ mới này không?")) {
+                return;
+            }
+            sleepData[existingIndex].hours = hoursInput;
+        } else {
+            sleepData.push({ date: dateInput, hours: hoursInput });
+        }
+
+        // Lưu vào LocalStorage
+        localStorage.setItem('niniSleepData', JSON.stringify(sleepData));
+
+        // Cập nhật giao diện
+        updateUI(sleepData);
+
+        // Xóa input giờ ngủ cho lần nhập sau
+        document.getElementById('hours-input').value = '';
+    }
+
+    // Hàm phụ: Xóa dữ liệu cũ
+    function clearData() {
+        if(confirm("🐻 Nini có chắc muốn xóa HẾT dữ liệu giấc ngủ cũ không?")) {
+            localStorage.removeItem('niniSleepData');
+            location.reload(); // Tải lại trang để xóa sạch
+        }
+    }
+
+    // 6. Chạy khi load trang
+    window.onload = function() {
+        initChart(); // Khởi tạo biểu đồ trống
+        const storedData = getStoredData(); // Lấy dữ liệu cũ
+        updateUI(storedData); // Cập nhật giao diện nếu có dữ liệu cũ
+    };
 
 </script>
 
