@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Nini Sleep Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body{
+font-family: Arial;
+background:#f5f5ff;
+text-align:center;
+padding:20px;
+}
+
+.card{
+background:white;
+padding:20px;
+border-radius:15px;
+max-width:400px;
+margin:auto;
+box-shadow:0 5px 20px rgba(0,0,0,0.1);
+}
+
+input{
+width:90%;
+padding:10px;
+margin:5px;
+}
+
+button{
+padding:10px;
+width:95%;
+background:black;
+color:white;
+border:none;
+border-radius:10px;
+margin-top:10px;
+}
+
+canvas{
+margin-top:20px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+
+<h2>🐱 Nini Sleep Tracker</h2>
+
+<input id="date" placeholder="Date (06/23)">
+<input id="hours" placeholder="Sleep Hours (8.0)">
+
+<button onclick="addData()">➕ Add Sleep</button>
+
+<canvas id="chart"></canvas>
+
+</div>
+
+<script>
+
+let data = {
+labels: [],
+values: []
+};
+
+function renderChart(){
+const ctx = document.getElementById('chart');
+
+new Chart(ctx, {
+type:'line',
+data:{
+labels:data.labels,
+datasets:[{
+label:'Sleep Hours',
+data:data.values,
+borderColor:'black',
+fill:false,
+tension:0.3
+}]
+},
+options:{
+responsive:true
+}
+});
+}
+
+function addData(){
+let d = document.getElementById('date').value;
+let h = document.getElementById('hours').value;
+
+data.labels.push(d);
+data.values.push(parseFloat(h));
+
+renderChart();
+}
+
+renderChart();
+
+</script>
+
+</body>
+</html>
